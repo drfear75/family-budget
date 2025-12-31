@@ -7,7 +7,7 @@ export default defineNuxtConfig({
     redirect: false
   },
   nitro: {
-    preset: 'azure'
+    preset: 'azure-static-web-apps'
   },
   runtimeConfig: {
     public: {
