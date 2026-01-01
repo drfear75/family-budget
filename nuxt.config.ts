@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     redirect: false
   },
   nitro: {
+    output: { dir: 'output' },
     preset: 'node-server'
   },
   runtimeConfig: {

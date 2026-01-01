@@ -36,7 +36,7 @@ jobs:
         with:
           name: node-app
           path: |
-            .output
+            output
             package.json
             package-lock.json
 
