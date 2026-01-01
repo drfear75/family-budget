@@ -1,4 +1,4 @@
-<script setup lang="ts">
+ï»¿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { Pie, Bar } from 'vue-chartjs'
@@ -138,15 +138,15 @@ const chartOptions = {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-green-50 p-6 rounded-lg shadow">
         <h3 class="text-sm font-medium text-green-800">Total Incomes</h3>
-        <p class="text-3xl font-bold text-green-600 mt-2">€ {{ totalIncomes.toFixed(2) }}</p>
+        <p class="text-3xl font-bold text-green-600 mt-2">&euro; {{ totalIncomes.toFixed(2) }}</p>
       </div>
       <div class="bg-red-50 p-6 rounded-lg shadow">
         <h3 class="text-sm font-medium text-red-800">Total Expenses</h3>
-        <p class="text-3xl font-bold text-red-600 mt-2">€ {{ totalExpenses.toFixed(2) }}</p>
+        <p class="text-3xl font-bold text-red-600 mt-2">&euro; {{ totalExpenses.toFixed(2) }}</p>
       </div>
       <div class="p-6 rounded-lg shadow" :class="balance >= 0 ? 'bg-blue-50' : 'bg-orange-50'">
         <h3 class="text-sm font-medium" :class="balance >= 0 ? 'text-blue-800' : 'text-orange-800'">Balance</h3>
-        <p class="text-3xl font-bold mt-2" :class="balance >= 0 ? 'text-blue-600' : 'text-orange-600'">€ {{ balance.toFixed(2) }}</p>
+        <p class="text-3xl font-bold mt-2" :class="balance >= 0 ? 'text-blue-600' : 'text-orange-600'">&euro; {{ balance.toFixed(2) }}</p>
       </div>
     </div>
 
@@ -162,7 +162,7 @@ const chartOptions = {
         <div v-if="Object.keys(expensesByPerson).length > 0" class="mt-4 space-y-2">
           <div v-for="(amount, person) in expensesByPerson" :key="person" class="flex justify-between text-sm">
             <span class="font-medium">{{ person }}:</span>
-            <span class="text-gray-600">€ {{ amount.toFixed(2) }} ({{ ((amount / totalExpenses) * 100).toFixed(1) }}%)</span>
+            <span class="text-gray-600">&euro; {{ amount.toFixed(2) }} ({{ ((amount / totalExpenses) * 100).toFixed(1) }}%)</span>
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@ const chartOptions = {
         <div v-if="Object.keys(incomesByPerson).length > 0" class="mt-4 space-y-2">
           <div v-for="(amount, person) in incomesByPerson" :key="person" class="flex justify-between text-sm">
             <span class="font-medium">{{ person }}:</span>
-            <span class="text-gray-600">€ {{ amount.toFixed(2) }} ({{ ((amount / totalIncomes) * 100).toFixed(1) }}%)</span>
+            <span class="text-gray-600">&euro; {{ amount.toFixed(2) }} ({{ ((amount / totalIncomes) * 100).toFixed(1) }}%)</span>
           </div>
         </div>
       </div>
@@ -226,14 +226,14 @@ const chartOptions = {
         <tbody>
           <tr v-for="(amount, category) in expensesByCategory" :key="category" class="border-b">
             <td class="py-2">{{ category }}</td>
-            <td class="text-right">€ {{ amount.toFixed(2) }}</td>
+            <td class="text-right">&euro; {{ amount.toFixed(2) }}</td>
             <td class="text-right">{{ ((amount / totalExpenses) * 100).toFixed(1) }}%</td>
           </tr>
         </tbody>
         <tfoot>
           <tr class="font-bold">
             <td class="py-2">Total</td>
-            <td class="text-right">€ {{ totalExpenses.toFixed(2) }}</td>
+            <td class="text-right">&euro; {{ totalExpenses.toFixed(2) }}</td>
             <td class="text-right">100%</td>
           </tr>
         </tfoot>
