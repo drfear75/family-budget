@@ -7,7 +7,7 @@ export default defineNuxtConfig({
     redirect: false
   },
   nitro: {
-    preset: 'azure'
+    preset: 'node-server'
   },
   runtimeConfig: {
     public: {
