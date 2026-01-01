@@ -242,7 +242,7 @@ watch(user, async (newUser) => {
                      <p class="text-xs text-gray-500">{{ expense.date }}  {{ expense.paid_by || 'N/A' }}</p>
                    </div>
                    <div class="flex items-center gap-3">
-                       <span class="font-bold text-gray-900">$ {{ expense.amount }}</span>
+                       <span class="font-bold text-gray-900">€ {{ expense.amount }}</span>
                        <button @click="startEdit(expense, 'expense')" class="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition text-sm">Edit</button>
                        <button @click="deleteItem(expense.id, 'expense')" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition text-sm">Delete</button>
                    </div>
@@ -264,7 +264,7 @@ watch(user, async (newUser) => {
                      <p class="text-xs text-gray-500">{{ income.date }}  {{ income.paid_by || 'N/A' }}</p>
                    </div>
                    <div class="flex items-center gap-3">
-                       <span class="font-bold text-green-700">$ {{ income.amount }}</span>
+                       <span class="font-bold text-green-700">€ {{ income.amount }}</span>
                        <button @click="startEdit(income, 'income')" class="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition text-sm">Edit</button>
                        <button @click="deleteItem(income.id, 'income')" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition text-sm">Delete</button>
                    </div>

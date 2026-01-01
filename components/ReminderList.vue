@@ -16,7 +16,7 @@ const emit = defineEmits(['mark-paid', 'edit-reminder', 'delete-reminder', 'conv
           <p class="text-xs text-gray-500">Due: {{ reminder.due_date }}</p>
         </div>
         <div class="flex items-center gap-2">
-           <span v-if="reminder.amount" class="font-bold text-gray-700">$ {{ reminder.amount }}</span>
+           <span v-if="reminder.amount" class="font-bold text-gray-700">€ {{ reminder.amount }}</span>
            <button v-if="!reminder.is_paid" @click="emit('mark-paid', reminder.id)" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">
              Mark Paid
            </button>
