@@ -6,6 +6,7 @@ const reminders = ref([])
 const incomes = ref([])
 const activeTab = ref('expenses')
 const dueRemindersCount = ref(0)
+const selectedImage = ref("")
 
 // Editing State
 const editingItem = ref(null)
@@ -203,6 +204,12 @@ watch(user, async (newUser) => {
                         <label class="block text-sm font-medium text-gray-700">Description</label>
                         <input v-model="editingItem.description" type="text" class="mt-1 block w-full border rounded p-2" />
                      </div>
+                     
+                     <div v-if="editingItem.image_url" class="mt-2">
+                        <label class="block text-sm font-medium text-gray-700">Receipt/Image</label>
+                        <img :src="editingItem.image_url" class="h-24 w-full object-cover rounded border cursor-pointer" @click="selectedImage = editingItem.image_url" />
+                     </div>
+
                      <div class="flex justify-end gap-2 mt-4">
                         <button @click="cancelEdit" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
                         <button @click="saveEdit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Changes</button>
@@ -238,7 +245,14 @@ watch(user, async (newUser) => {
                <ul v-else class="space-y-3">
                  <li v-for="expense in expenses" :key="expense.id" class="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100 transition group">
                    <div class="flex-1">
-                     <p class="font-medium text-gray-900">{{ expense.description || expense.category }}</p>
+                    <div class="flex items-center">
+                      <p class="font-medium text-gray-900">{{ expense.description || expense.category }}</p>
+                      <button v-if="expense.image_url" @click="selectedImage = expense.image_url" class="ml-2 text-blue-500 hover:text-blue-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
                      <p class="text-xs text-gray-500">{{ expense.date }}  {{ expense.paid_by || 'N/A' }}</p>
                    </div>
                    <div class="flex items-center gap-3">
@@ -260,7 +274,14 @@ watch(user, async (newUser) => {
                <ul v-else class="space-y-3">
                  <li v-for="income in incomes" :key="income.id" class="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100 transition group">
                    <div class="flex-1">
-                     <p class="font-medium text-gray-900">{{ income.description || income.source }}</p>
+                    <div class="flex items-center">
+                      <p class="font-medium text-gray-900">{{ income.description || income.source }}</p>
+                      <button v-if="income.image_url" @click="selectedImage = income.image_url" class="ml-2 text-blue-500 hover:text-blue-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
                      <p class="text-xs text-gray-500">{{ income.date }}  {{ income.paid_by || 'N/A' }}</p>
                    </div>
                    <div class="flex items-center gap-3">
@@ -295,6 +316,14 @@ watch(user, async (newUser) => {
         <h2 class="text-2xl text-gray-700 mb-4">Welcome to Family Budget</h2>
         <p class="text-gray-600 mb-8">Please login to manage your expenses.</p>
         <NuxtLink to="/login" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Get Started</NuxtLink>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div v-if="selectedImage" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4" @click="selectedImage = ''">
+      <div class="relative max-w-4xl w-full">
+        <img :src="selectedImage" class="max-h-[90vh] mx-auto rounded shadow-2xl" />
+        <button class="absolute top-[-40px] right-0 text-white text-3xl font-bold">&times;</button>
       </div>
     </div>
   </div>
