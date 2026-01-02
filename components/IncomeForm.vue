@@ -10,7 +10,7 @@ const user = useSupabaseUser()
 const emit = defineEmits(['income-saved'])
 
 const sources = ['Salary', 'Freelance', 'Gift', 'Investment', 'Other']
-const people = ['Massimo', 'Elena']
+const people = ['Massimo', 'Elena', 'Conto Mediolanum']
 
 const selectedFile = ref<File | null>(null)
 const imagePreview = ref('')

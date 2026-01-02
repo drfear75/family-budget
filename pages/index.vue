@@ -12,7 +12,7 @@ const selectedImage = ref("")
 const editingItem = ref(null)
 const editingType = ref('') // 'expense', 'income', or 'reminder'
 
-const people = ['Massimo', 'Elena']
+const people = ['Massimo', 'Elena', 'Conto Mediolanum']
 
 onMounted(async () => {
     if (user.value) {
