@@ -1,9 +1,9 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
-import { Pie, Bar } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import { Pie, Bar, Line } from 'vue-chartjs'
 
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps(['expenses', 'incomes'])
 
@@ -121,6 +121,46 @@ const comparisonChartData = computed(() => ({
   ]
 }))
 
+const monthlyTrend = computed(() => {
+  const dataMap = {}
+  
+  props.incomes.forEach(inc => {
+    const month = inc.date.substring(0, 7)
+    if (!dataMap[month]) dataMap[month] = { income: 0, expense: 0 }
+    dataMap[month].income += parseFloat(inc.amount)
+  })
+  
+  props.expenses.forEach(exp => {
+    const month = exp.date.substring(0, 7)
+    if (!dataMap[month]) dataMap[month] = { income: 0, expense: 0 }
+    dataMap[month].expense += parseFloat(exp.amount)
+  })
+  
+  const sortedMonths = Object.keys(dataMap).sort()
+  
+  return {
+    labels: sortedMonths,
+    datasets: [
+      {
+        label: 'Incomes',
+        data: sortedMonths.map(m => dataMap[m].income),
+        borderColor: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+        fill: true,
+        tension: 0.4
+      },
+      {
+        label: 'Expenses',
+        data: sortedMonths.map(m => dataMap[m].expense),
+        borderColor: '#F44336',
+        backgroundColor: 'rgba(244, 67, 54, 0.2)',
+        fill: true,
+        tension: 0.4
+      }
+    ]
+  }
+})
+
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -204,11 +244,19 @@ const chartOptions = {
       </div>
     </div>
 
-    <!-- Income vs Expenses Comparison -->
-    <div class="bg-white p-6 rounded-lg shadow">
-      <h3 class="text-lg font-semibold mb-4 text-gray-800">Income vs Expenses</h3>
-      <div style="height: 300px;">
-        <Bar :data="comparisonChartData" :options="chartOptions" />
+    <!-- Income vs Expenses and Trend -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">Income vs Expenses</h3>
+        <div style="height: 300px;">
+          <Bar :data="comparisonChartData" :options="chartOptions" />
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">Monthly Trend</h3>
+        <div style="height: 300px;">
+          <Line :data="monthlyTrend" :options="chartOptions" />
+        </div>
       </div>
     </div>
 
