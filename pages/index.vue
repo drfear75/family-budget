@@ -62,7 +62,6 @@ const saveEdit = async () => {
     else if (editingType.value === 'income') table = 'incomes'
     else if (editingType.value === 'reminder') table = 'reminders'
     
-    // Validate amount if present
      if (editingItem.value.amount && isNaN(parseFloat(editingItem.value.amount))) {
         alert('Please enter a valid amount')
         return
@@ -112,7 +111,6 @@ const convertReminderToExpense = async (reminder: any) => {
         return
     }
     
-    // Create expense
     const expensePayload = {
         user_id: currentUser.id,
         amount: reminder.amount || 0,
@@ -129,7 +127,6 @@ const convertReminderToExpense = async (reminder: any) => {
         return
     }
     
-    // Mark reminder as paid
     const { error: updateError } = await supabase.from('reminders').update({ is_paid: true }).eq('id', reminder.id)
     
     if (updateError) {
@@ -144,187 +141,295 @@ const convertReminderToExpense = async (reminder: any) => {
 watch(user, async (newUser) => {
     if (newUser) await Promise.all([fetchExpenses(), fetchReminders(), fetchIncomes()])
 })
+
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    'Food': 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    'Transport': 'bg-sky-50 text-sky-700 border-sky-100',
+    'Utilities': 'bg-amber-50 text-amber-700 border-amber-100',
+    'Entertainment': 'bg-purple-50 text-purple-700 border-purple-100',
+    'Health': 'bg-rose-50 text-rose-700 border-rose-100',
+    'Insurance': 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    'Vacation': 'bg-pink-50 text-pink-700 border-pink-100',
+    'Other': 'bg-slate-50 text-slate-700 border-slate-100'
+  }
+  return colors[category] || colors['Other']
+}
+
+const totalEx = computed(() => expenses.value.reduce((s, e) => s + parseFloat(e.amount), 0))
+const totalIn = computed(() => incomes.value.reduce((s, e) => s + parseFloat(e.amount), 0))
+const balance = computed(() => totalIn.value - totalEx.value)
+
+const tabs = [
+  { id: 'expenses', name: 'Expenses', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+  { id: 'incomes', name: 'Incomes', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+  { id: 'reminders', name: 'Reminders', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+  { id: 'statistics', name: 'Stats', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
+]
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 p-8">
-    <div class="max-w-6xl mx-auto">
-      <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Family Budget Dashboard</h1>
-        <div v-if="user" class="flex items-center gap-4">
-          <span class="text-sm text-gray-600">{{ user.email }}</span>
-          <button @click="supabase.auth.signOut()" class="text-sm text-red-600 hover:text-red-800">Sign Out</button>
+  <div class="min-h-screen gradient-bg pb-20 sm:pb-8">
+    <!-- Header -->
+    <header class="glass-card sticky top-0 z-40 px-4 py-4 mb-6">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Home Budget</h1>
+            <p v-if="user" class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{{ user.email?.split('@')[0] }}</p>
+          </div>
         </div>
-        <NuxtLink v-else to="/login" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Login</NuxtLink>
-      </div>
 
+        <div v-if="user" class="flex items-center gap-4">
+          <div class="hidden sm:block text-right">
+             <p class="text-[10px] text-slate-500 font-bold uppercase">Main Balance</p>
+             <p class="text-lg font-bold" :class="balance >= 0 ? 'text-emerald-600' : 'text-rose-600'">&euro; {{ balance.toFixed(2) }}</p>
+          </div>
+          <button @click="supabase.auth.signOut()" class="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+        <NuxtLink v-else to="/login" class="btn-primary">Login</NuxtLink>
+      </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4">
       <div v-if="user">
          <!-- Notification Banner -->
-         <div v-if="dueRemindersCount > 0" class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
-            <p class="font-bold">Attention Needed</p>
-            <p>You have {{ dueRemindersCount }} reminder(s) due or overdue. Please check the Reminders tab.</p>
+         <div v-if="dueRemindersCount > 0" class="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl flex items-center gap-3 animate-slide-up" role="alert">
+            <div class="flex-shrink-0 w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center">
+              <span class="font-bold text-rose-600">!</span>
+            </div>
+            <div>
+              <p class="font-bold text-sm">Attention Needed</p>
+              <p class="text-xs">You have {{ dueRemindersCount }} overdue reminder(s).</p>
+            </div>
          </div>
 
          <!-- Edit Modal -->
-         <div v-if="editingItem" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-                <h3 class="text-xl font-bold mb-4">Edit {{ editingType === 'expense' ? 'Expense' : editingType === 'income' ? 'Income' : 'Reminder' }}</h3>
-                <div class="space-y-4">
-                     <div v-if="editingType === 'reminder'">
-                        <label class="block text-sm font-medium text-gray-700">Title</label>
-                        <input v-model="editingItem.title" type="text" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Amount</label>
-                        <input v-model="editingItem.amount" type="number" step="0.01" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     <div v-if="editingType === 'expense'">
-                        <label class="block text-sm font-medium text-gray-700">Category</label>
-                        <input v-model="editingItem.category" type="text" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     <div v-if="editingType === 'income'">
-                        <label class="block text-sm font-medium text-gray-700">Source</label>
-                         <input v-model="editingItem.source" type="text" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     <div v-if="editingType !== 'reminder'">
-                        <label class="block text-sm font-medium text-gray-700">{{ editingType === 'expense' ? 'Paid By' : 'Received By' }}</label>
-                        <select v-model="editingItem.paid_by" class="mt-1 block w-full border rounded p-2">
-                            <option v-for="person in people" :key="person" :value="person">{{ person }}</option>
-                        </select>
-                     </div>
-                     <div v-if="editingType === 'reminder'">
-                        <label class="block text-sm font-medium text-gray-700">Due Date</label>
-                        <input v-model="editingItem.due_date" type="date" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     <div v-else>
-                        <label class="block text-sm font-medium text-gray-700">Date</label>
-                        <input v-model="editingItem.date" type="date" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Description</label>
-                        <input v-model="editingItem.description" type="text" class="mt-1 block w-full border rounded p-2" />
-                     </div>
-                     
-                     <div v-if="editingItem.image_url" class="mt-2">
-                        <label class="block text-sm font-medium text-gray-700">Receipt/Image</label>
-                        <img :src="editingItem.image_url" class="h-24 w-full object-cover rounded border cursor-pointer" @click="selectedImage = editingItem.image_url" />
-                     </div>
+         <Teleport to="body">
+           <div v-if="editingItem" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+              <div class="glass-card p-6 rounded-3xl w-full max-w-md animate-slide-up">
+                  <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Edit {{ editingType }}</h3>
+                    <button @click="cancelEdit" class="text-slate-400 hover:text-slate-600 font-bold text-2xl">&times;</button>
+                  </div>
+                  <div class="space-y-4">
+                       <div v-if="editingType === 'reminder'">
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Title</label>
+                          <input v-model="editingItem.title" type="text" class="input-field" />
+                       </div>
+                       <div>
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Amount</label>
+                          <input v-model="editingItem.amount" type="number" step="0.01" class="input-field" />
+                       </div>
+                       <div v-if="editingType === 'expense'">
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
+                          <input v-model="editingItem.category" type="text" class="input-field" />
+                       </div>
+                       <div v-if="editingType === 'income'">
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Source</label>
+                           <input v-model="editingItem.source" type="text" class="input-field" />
+                       </div>
+                       <div v-if="editingType !== 'reminder'">
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ editingType === 'expense' ? 'Paid By' : 'Received By' }}</label>
+                          <select v-model="editingItem.paid_by" class="input-field">
+                              <option v-for="person in people" :key="person" :value="person">{{ person }}</option>
+                          </select>
+                       </div>
+                       <div v-if="editingType === 'reminder'">
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Due Date</label>
+                          <input v-model="editingItem.due_date" type="date" class="input-field" />
+                       </div>
+                       <div v-else>
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+                          <input v-model="editingItem.date" type="date" class="input-field" />
+                       </div>
+                       <div>
+                          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+                          <input v-model="editingItem.description" type="text" class="input-field" />
+                       </div>
+                       
+                       <div class="flex gap-3 pt-4">
+                          <button @click="cancelEdit" class="btn-secondary flex-1">Cancel</button>
+                          <button @click="saveEdit" class="btn-primary flex-1">Save</button>
+                       </div>
+                  </div>
+              </div>
+           </div>
+         </Teleport>
 
-                     <div class="flex justify-end gap-2 mt-4">
-                        <button @click="cancelEdit" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
-                        <button @click="saveEdit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Changes</button>
-                     </div>
+         <!-- Tabs (Navigation) -->
+         <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 z-50 px-4 py-2 sm:relative sm:bg-transparent sm:border-0 sm:mb-8 sm:p-0">
+            <div class="flex justify-between sm:justify-start gap-2 bg-slate-100/50 p-1.5 rounded-2xl max-w-6xl mx-auto sm:w-fit">
+              <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" 
+                :class="[activeTab === tab.id ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none flex flex-col sm:flex-row items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300']">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="tab.icon" />
+                </svg>
+                <span class="text-[10px] sm:text-sm">{{ tab.name }}</span>
+              </button>
+            </div>
+         </nav>
+
+         <!-- Views -->
+         <div class="animate-slide-up">
+           <!-- Expenses View -->
+           <div v-if="activeTab === 'expenses'" class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div class="lg:col-span-2">
+                <ExpenseForm @expense-saved="fetchExpenses" />
+              </div>
+              <div class="lg:col-span-3 glass-card p-6 rounded-3xl">
+                <div class="flex justify-between items-center mb-6">
+                  <h3 class="text-xl font-bold text-slate-800">Recent Transactions</h3>
+                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ expenses.length }} Items</p>
                 </div>
-            </div>
-         </div>
-
-         <!-- Tabs -->
-         <div class="mb-6 border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-              <button @click="activeTab = 'expenses'" :class="[activeTab === 'expenses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']">
-                Expenses
-              </button>
-              <button @click="activeTab = 'incomes'" :class="[activeTab === 'incomes' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']">
-                Incomes
-              </button>
-              <button @click="activeTab = 'reminders'" :class="[activeTab === 'reminders' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']">
-                Reminders
-              </button>
-              <button @click="activeTab = 'statistics'" :class="[activeTab === 'statistics' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']">
-                Statistics
-              </button>
-            </nav>
-         </div>
-
-         <!-- Expenses View -->
-         <div v-if="activeTab === 'expenses'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <ExpenseForm @expense-saved="fetchExpenses" />
-            <div class="bg-white p-6 rounded-lg shadow-md">
-              <h3 class="text-xl font-semibold mb-4 text-gray-800">Recent Expenses</h3>
-               <div v-if="expenses.length === 0" class="text-gray-500 text-center py-4">No expenses recorded yet.</div>
-               <ul v-else class="space-y-3">
-                 <li v-for="expense in expenses" :key="expense.id" class="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100 transition group">
-                   <div class="flex-1">
-                    <div class="flex items-center">
-                      <p class="font-medium text-gray-900">{{ expense.description || expense.category }}</p>
-                      <button v-if="expense.image_url" @click="selectedImage = expense.image_url" class="ml-2 text-blue-500 hover:text-blue-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                     <p class="text-xs text-gray-500">{{ expense.date }}  {{ expense.paid_by || 'N/A' }}</p>
+                 <div v-if="expenses.length === 0" class="text-slate-400 text-center py-12">
+                   <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                     </svg>
                    </div>
-                   <div class="flex items-center gap-3">
-                       <span class="font-bold text-gray-900">&euro; {{ expense.amount }}</span>
-                       <button @click="startEdit(expense, 'expense')" class="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition text-sm">Edit</button>
-                       <button @click="deleteItem(expense.id, 'expense')" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition text-sm">Delete</button>
-                   </div>
-                 </li>
-               </ul>
-            </div>
-         </div>
+                   No expenses recorded yet.
+                 </div>
+                 <ul v-else class="space-y-4">
+                   <li v-for="expense in expenses" :key="expense.id" class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-slate-50/50 rounded-2xl hover:bg-white hover:shadow-md transition-all duration-300 group ring-1 ring-slate-100 hover:ring-indigo-100">
+                     <div class="flex items-center gap-4 flex-1">
+                        <div :class="['w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border shadow-sm', getCategoryColor(expense.category).split(' ')[0].replace('bg-', 'bg-').replace('-50', '-100')]">
+                           <span class="text-lg"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 mb-0.5">
+                            <p class="font-bold text-slate-800 truncate">{{ expense.description || expense.category }}</p>
+                            <span :class="['px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full border border-opacity-20 shadow-sm shrink-0', getCategoryColor(expense.category)]">
+                               {{ expense.category }}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-3 text-[10px] font-medium text-slate-400">
+                            <p>{{ expense.date }}</p>
+                            <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                            <p>{{ expense.paid_by || 'Unknown' }}</p>
+                          </div>
+                        </div>
+                     </div>
+                     <div class="flex items-center justify-between sm:justify-end gap-4 mt-4 sm:mt-0">
+                         <div class="text-right">
+                           <span class="text-lg font-black text-slate-900">&euro; {{ expense.amount.toFixed(2) }}</span>
+                         </div>
+                         <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button v-if="expense.image_url" @click="selectedImage = expense.image_url" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="View Receipt">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            <button @click="startEdit(expense, 'expense')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button @click="deleteItem(expense.id, 'expense')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                         </div>
+                     </div>
+                   </li>
+                 </ul>
+              </div>
+           </div>
 
-         <!-- Incomes View -->
-         <div v-if="activeTab === 'incomes'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <IncomeForm @income-saved="fetchIncomes" />
-            <div class="bg-white p-6 rounded-lg shadow-md">
-              <h3 class="text-xl font-semibold mb-4 text-gray-800">Recent Incomes</h3>
-               <div v-if="incomes.length === 0" class="text-gray-500 text-center py-4">No incomes recorded yet.</div>
-               <ul v-else class="space-y-3">
-                 <li v-for="income in incomes" :key="income.id" class="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100 transition group">
-                   <div class="flex-1">
-                    <div class="flex items-center">
-                      <p class="font-medium text-gray-900">{{ income.description || income.source }}</p>
-                      <button v-if="income.image_url" @click="selectedImage = income.image_url" class="ml-2 text-blue-500 hover:text-blue-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                     <p class="text-xs text-gray-500">{{ income.date }}  {{ income.paid_by || 'N/A' }}</p>
-                   </div>
-                   <div class="flex items-center gap-3">
-                       <span class="font-bold text-green-700">&euro; {{ income.amount }}</span>
-                       <button @click="startEdit(income, 'income')" class="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition text-sm">Edit</button>
-                       <button @click="deleteItem(income.id, 'income')" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition text-sm">Delete</button>
-                   </div>
-                 </li>
-               </ul>
-            </div>
-         </div>
+           <!-- Incomes View -->
+           <div v-if="activeTab === 'incomes'" class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div class="lg:col-span-2">
+                <IncomeForm @income-saved="fetchIncomes" />
+              </div>
+              <div class="lg:col-span-3 glass-card p-6 rounded-3xl">
+                <h3 class="text-xl font-bold mb-6 text-slate-800">Recent Incomes</h3>
+                 <div v-if="incomes.length === 0" class="text-slate-400 text-center py-12">No incomes recorded yet.</div>
+                 <ul v-else class="space-y-4">
+                   <li v-for="income in incomes" :key="income.id" class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-slate-50/50 rounded-2xl hover:bg-white hover:shadow-md transition-all duration-300 group ring-1 ring-slate-100 hover:ring-emerald-100">
+                     <div class="flex items-center gap-4 flex-1">
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-emerald-200 text-lg"></div>
+                        <div class="flex-1 min-w-0">
+                          <p class="font-bold text-slate-800 truncate mb-0.5">{{ income.description || income.source }}</p>
+                          <div class="flex items-center gap-3 text-[10px] font-medium text-slate-400">
+                            <p class="text-emerald-600 uppercase font-black tracking-tighter">{{ income.source }}</p>
+                            <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                            <p>{{ income.date }}</p>
+                          </div>
+                        </div>
+                     </div>
+                     <div class="flex items-center justify-between sm:justify-end gap-4 mt-4 sm:mt-0">
+                        <span class="text-lg font-black text-emerald-600">&euro; {{ income.amount.toFixed(2) }}</span>
+                        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+                            <button @click="startEdit(income, 'income')" class="p-2 hover:text-indigo-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                            <button @click="deleteItem(income.id, 'income')" class="p-2 hover:text-rose-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        </div>
+                     </div>
+                   </li>
+                 </ul>
+              </div>
+           </div>
 
-         <!-- Reminders View -->
-         <div v-if="activeTab === 'reminders'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <ReminderForm @reminder-saved="fetchReminders" />
-            <ReminderList 
-                :reminders="reminders" 
-                @mark-paid="markReminderPaid" 
-                @edit-reminder="(r) => startEdit(r, 'reminder')"
-                @delete-reminder="(id) => deleteItem(id, 'reminder')"
-                @convert-to-expense="convertReminderToExpense"
-            />
-         </div>
+           <!-- Reminders View -->
+           <div v-if="activeTab === 'reminders'" class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div class="lg:col-span-2">
+                <ReminderForm @reminder-saved="fetchReminders" />
+              </div>
+              <div class="lg:col-span-3">
+                <ReminderList 
+                    :reminders="reminders" 
+                    @mark-paid="markReminderPaid" 
+                    @edit-reminder="(r) => startEdit(r, 'reminder')"
+                    @delete-reminder="(id) => deleteItem(id, 'reminder')"
+                    @convert-to-expense="convertReminderToExpense"
+                />
+              </div>
+           </div>
 
-         <!-- Statistics View -->
-         <div v-if="activeTab === 'statistics'">
-            <Statistics :expenses="expenses" :incomes="incomes" />
+           <!-- Statistics View -->
+           <div v-if="activeTab === 'statistics'" class="space-y-8">
+              <Statistics :expenses="expenses" :incomes="incomes" />
+           </div>
          </div>
 
       </div>
-      <div v-else class="text-center py-20">
-        <h2 class="text-2xl text-gray-700 mb-4">Welcome to Family Budget</h2>
-        <p class="text-gray-600 mb-8">Please login to manage your expenses.</p>
-        <NuxtLink to="/login" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Get Started</NuxtLink>
+      <div v-else class="text-center py-32 animate-slide-up">
+        <div class="w-24 h-24 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100/50">
+           <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+           </svg>
+        </div>
+        <h2 class="text-4xl font-black text-slate-900 mb-4 tracking-tight">Track Your Wealth</h2>
+        <p class="text-slate-500 mb-10 text-lg max-w-md mx-auto">Master your finances with our elegant family budget tracker. Simple, powerful, and secure.</p>
+        <NuxtLink to="/login" class="btn-primary py-4 px-10 text-lg">Get Started Now</NuxtLink>
       </div>
     </div>
 
     <!-- Lightbox -->
-    <div v-if="selectedImage" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4" @click="selectedImage = ''">
-      <div class="relative max-w-4xl w-full">
-        <img :src="selectedImage" class="max-h-[90vh] mx-auto rounded shadow-2xl" />
-        <button class="absolute top-[-40px] right-0 text-white text-3xl font-bold">&times;</button>
+    <Teleport to="body">
+      <div v-if="selectedImage" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center z-[200] p-4 sm:p-12" @click="selectedImage = ''">
+        <div class="relative max-w-5xl w-full h-full flex items-center justify-center">
+          <img :src="selectedImage" class="max-h-full max-w-full object-contain rounded-2xl shadow-2xl animate-slide-up" />
+          <button class="absolute -top-12 right-0 text-white p-2 hover:bg-white/10 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.btn-primary {
+  @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all duration-300;
+}
+</style>

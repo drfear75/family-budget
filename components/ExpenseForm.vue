@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 const amount = ref('')
 const category = ref('Food')
 const date = ref(new Date().toISOString().split('T')[0])
@@ -106,7 +106,6 @@ const submitExpense = async () => {
         if (error) {
             alert('Error saving expense: ' + error.message)
         } else {
-            alert('Expense saved!')
             emit('expense-saved')
             resetForm()
         }
@@ -127,51 +126,77 @@ const resetForm = () => {
 </script>
 
 <template>
-  <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
-    <h3 class="text-xl font-semibold mb-4 text-gray-800">New Expense</h3>
-    
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-1">Scan & Save Receipt</label>
-      <input type="file" @change="handleFileUpload" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-      <p v-if="loading" class="text-xs text-blue-500 mt-1">Analyzing...</p>
-      
-      <div v-if="imagePreview" class="mt-4 relative">
-        <img :src="imagePreview" class="h-32 w-full object-cover rounded-md border" />
-        <button @click="resetForm" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs"></button>
+  <div class="glass-card p-6 rounded-3xl mb-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
       </div>
+      <h3 class="text-xl font-bold text-slate-800">New Expense</h3>
     </div>
-
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Amount</label>
-        <input v-model="amount" type="number" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" placeholder="0.00" />
+    
+    <div class="space-y-5">
+      <!-- Image Upload Area -->
+      <div class="group relative">
+        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-300 transition-all duration-300 group-hover:scale-[1.01]">
+            <div v-if="!imagePreview" class="flex flex-col items-center justify-center pt-5 pb-6">
+                <svg class="w-8 h-8 mb-3 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Snap Receipt</p>
+                <p class="text-[10px] text-slate-400 mt-1">PNG, JPG up to 10MB</p>
+            </div>
+            <img v-else :src="imagePreview" class="w-full h-full object-cover rounded-2xl" />
+            <input type="file" @change="handleFileUpload" accept="image/*" class="hidden" />
+            
+            <button v-if="imagePreview" @click.stop.prevent="resetForm" class="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-rose-600 transition-colors">
+              <span class="text-sm font-bold">&times;</span>
+            </button>
+        </label>
+        <div v-if="loading" class="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
+           <div class="flex items-center gap-2 text-indigo-600 font-bold text-sm">
+             <div class="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+             Analyzing...
+           </div>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Category</label>
-        <select v-model="category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
-            <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-        </select>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Amount</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">&euro;</span>
+            <input v-model="amount" type="number" step="0.01" class="input-field pl-8" placeholder="0.00" />
+          </div>
+        </div>
+
+        <div>
+           <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Category</label>
+           <select v-model="category" class="input-field">
+               <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+           </select>
+        </div>
+
+        <div>
+           <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Paid By</label>
+           <select v-model="paidBy" class="input-field">
+               <option v-for="person in people" :key="person" :value="person">{{ person }}</option>
+           </select>
+        </div>
+
+        <div class="col-span-2">
+           <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Date</label>
+           <input v-model="date" type="date" class="input-field" />
+        </div>
+        
+        <div class="col-span-2">
+           <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Description</label>
+           <input v-model="description" type="text" class="input-field" placeholder="What was it for?" />
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Paid By</label>
-        <select v-model="paidBy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
-            <option v-for="person in people" :key="person" :value="person">{{ person }}</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Date</label>
-        <input v-model="date" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-      </div>
-      
-       <div>
-        <label class="block text-sm font-medium text-gray-700">Description</label>
-        <input v-model="description" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-      </div>
-
-      <button @click="submitExpense" :disabled="loading" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+      <button @click="submitExpense" :disabled="loading" class="btn-primary w-full py-4 shadow-lg shadow-indigo-100 mt-2">
         {{ loading ? 'Saving...' : 'Save Expense' }}
       </button>
     </div>

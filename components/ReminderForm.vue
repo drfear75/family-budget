@@ -1,73 +1,71 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 const title = ref('')
 const amount = ref('')
-const dueDate = ref('')
+const dueDate = ref(new Date().toISOString().split('T')[0])
 const loading = ref(false)
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const emit = defineEmits(['reminder-saved'])
 
 const submitReminder = async () => {
-    if (!user.value) {
-        alert('Please login first')
-        return
-    }
-
-    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !currentUser || !currentUser.id) {
-        console.error('Auth Error:', authError)
-        alert('Internal Error: Unable to retrieve your User ID. Please sign out and sign in again.')
+    if (!user.value) return
+    if (!title.value) {
+        alert('Please enter a title')
         return
     }
 
     loading.value = true
-  
-    const payload = {
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    
+    const { error } = await supabase.from('reminders').insert({
         user_id: currentUser.id,
         title: title.value,
         amount: amount.value ? parseFloat(amount.value) : null,
         due_date: dueDate.value,
         is_paid: false
-    }
-
-    console.log('Reminder Payload:', payload)
-
-    const { error } = await supabase.from('reminders').insert(payload)
+    })
 
     loading.value = false
-    
     if (error) {
-        alert('Error creating reminder: ' + error.message)
-        console.error('Supabase Error:', error)
+        alert(error.message)
     } else {
-        emit('reminder-saved')
         title.value = ''
         amount.value = ''
-        dueDate.value = ''
-        alert('Reminder set!')
+        emit('reminder-saved')
     }
 }
 </script>
 
 <template>
-  <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-    <h3 class="text-xl font-semibold mb-4 text-gray-800">Set Reminder</h3>
+  <div class="glass-card p-6 rounded-3xl mb-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-800">Set Reminder</h3>
+    </div>
+
     <div class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700">Title</label>
-        <input v-model="title" type="text" placeholder="e.g., Electricity Bill" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Title</label>
+        <input v-model="title" type="text" class="input-field" placeholder="Rent, Internet, etc." />
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Amount (Optional)</label>
-        <input v-model="amount" type="number" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Amount (Optional)</label>
+          <input v-model="amount" type="number" step="0.01" class="input-field" placeholder="0.00" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Due Date</label>
+          <input v-model="dueDate" type="date" class="input-field" />
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Due Date</label>
-        <input v-model="dueDate" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" />
-      </div>
-      <button @click="submitReminder" :disabled="loading" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-        {{ loading ? 'Saving...' : 'Set Reminder' }}
+
+      <button @click="submitReminder" :disabled="loading" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg shadow-amber-100 mt-2 disabled:bg-slate-300">
+        {{ loading ? 'Adding...' : 'Add Reminder' }}
       </button>
     </div>
   </div>
