@@ -12,6 +12,8 @@ const selectedImage = ref("")
 const editingItem = ref(null)
 const editingType = ref('') // 'expense', 'income', or 'reminder'
 
+const categories = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Insurance', 'Vacation', 'Home', 'Filippo', 'Other']
+const sources = ['Salary', 'Freelance', 'Gift', 'Investment', 'Other']
 const people = ['Massimo', 'Elena', 'Conto Mediolanum']
 
 onMounted(async () => {
@@ -151,6 +153,8 @@ const getCategoryColor = (category: string) => {
     'Health': 'bg-rose-50 text-rose-700 border-rose-100',
     'Insurance': 'bg-indigo-50 text-indigo-700 border-indigo-100',
     'Vacation': 'bg-pink-50 text-pink-700 border-pink-100',
+    'Home': 'bg-blue-50 text-blue-700 border-blue-100',
+    'Filippo': 'bg-teal-50 text-teal-700 border-teal-100',
     'Other': 'bg-slate-50 text-slate-700 border-slate-100'
   }
   return colors[category] || colors['Other']
@@ -232,11 +236,15 @@ const tabs = [
                        </div>
                        <div v-if="editingType === 'expense'">
                           <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
-                          <input v-model="editingItem.category" type="text" class="input-field" />
+                          <select v-model="editingItem.category" class="input-field">
+                              <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+                          </select>
                        </div>
                        <div v-if="editingType === 'income'">
                           <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Source</label>
-                           <input v-model="editingItem.source" type="text" class="input-field" />
+                          <select v-model="editingItem.source" class="input-field">
+                              <option v-for="src in sources" :key="src" :value="src">{{ src }}</option>
+                          </select>
                        </div>
                        <div v-if="editingType !== 'reminder'">
                           <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ editingType === 'expense' ? 'Paid By' : 'Received By' }}</label>

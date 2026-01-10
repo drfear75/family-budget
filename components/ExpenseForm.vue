@@ -9,7 +9,7 @@ const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const emit = defineEmits(['expense-saved'])
 
-const categories = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Insurance', 'Vacation', 'Other']
+const categories = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Insurance', 'Vacation', 'Home', 'Filippo', 'Other']
 const people = ['Massimo', 'Elena', 'Conto Mediolanum']
 
 const selectedFile = ref<File | null>(null)
