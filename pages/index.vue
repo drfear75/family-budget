@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const user = useSupabaseUser()
 const supabase = useSupabaseClient()
 const expenses = ref([])
@@ -364,6 +364,8 @@ const tabs = [
                             <p class="text-emerald-600 uppercase font-black tracking-tighter">{{ income.source }}</p>
                             <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
                             <p>{{ income.date }}</p>
+                            <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                            <p>{{ income.paid_by }}</p>
                           </div>
                         </div>
                      </div>
@@ -433,3 +435,4 @@ const tabs = [
   @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all duration-300;
 }
 </style>
+
