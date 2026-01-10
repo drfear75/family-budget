@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const amount = ref('')
 const source = ref('Salary')
 const date = ref(new Date().toISOString().split('T')[0])
@@ -130,7 +130,7 @@ const resetForm = () => {
           <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Amount</label>
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 font-bold">&euro;</span>
-            <input v-model="amount" type="number" step="0.01" class="input-field pl-8 border-emerald-100 focus:border-emerald-500 focus:ring-emerald-500/10" placeholder="0.00" />
+            <input v-model="amount" type="number" step="0.01" class="input-field !pl-12 border-emerald-100 focus:border-emerald-500 focus:ring-emerald-500/10" placeholder="0.00" />
           </div>
         </div>
 
@@ -165,3 +165,5 @@ const resetForm = () => {
     </div>
   </div>
 </template>
+
+

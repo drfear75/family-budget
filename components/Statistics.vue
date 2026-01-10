@@ -126,6 +126,62 @@ const lineOptions = {
     ...chartOptions,
     scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' } } }
 }
+
+const incomesByPersonAndTypeData = computed(() => {
+  if (!props.incomes) return { labels: [], datasets: [] }
+  const people = [...new Set(props.incomes.map(inc => inc.paid_by || 'Unknown'))]
+  const sources = [...new Set(props.incomes.map(inc => inc.source || 'Other'))]
+  
+  const datasets = sources.map((source, index) => {
+    const data = people.map(person => {
+      return props.incomes
+        .filter(inc => (inc.paid_by || 'Unknown') === person && (inc.source || 'Other') === source)
+        .reduce((sum, inc) => sum + parseFloat(inc.amount), 0)
+    })
+
+    if (data.every(val => val === 0)) return null
+
+    return {
+      label: source,
+      data: data,
+      backgroundColor: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5', '#6366F1', '#F43F5E', '#F59E0B'][index % 8],
+      borderRadius: 6,
+      borderWidth: 0
+    }
+  }).filter(d => d !== null)
+
+  return {
+    labels: people,
+    datasets: datasets
+  }
+})
+
+const incomeBarOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { 
+      position: 'bottom', 
+      labels: { 
+        usePointStyle: true, 
+        font: { family: 'Outfit', weight: 'bold', size: 10 } 
+      } 
+    }
+  },
+  scales: {
+    x: {
+      grid: { display: false },
+      ticks: { font: { family: 'Outfit', weight: 'bold' } }
+    },
+    y: {
+      grid: { color: '#f1f5f9' },
+      ticks: { 
+        font: { family: 'Outfit' },
+        callback: (value) => '\u20AC' + value
+      }
+    }
+  }
+}
 </script>
 
 <template>
@@ -166,6 +222,13 @@ const lineOptions = {
         <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Split By Person</h3>
         <div style="height: 250px;">
           <Pie :data="expensesByPersonChart" :options="chartOptions" />
+        </div>
+      </div>
+
+      <div class="glass-card p-6 rounded-3xl lg:col-span-3">
+        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Incomes by Person & Type</h3>
+        <div style="height: 300px;">
+          <Bar :data="incomesByPersonAndTypeData" :options="incomeBarOptions" />
         </div>
       </div>
     </div>
