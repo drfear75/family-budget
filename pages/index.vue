@@ -13,7 +13,7 @@ const editingItem = ref(null)
 const editingType = ref('') // 'expense', 'income', or 'reminder'
 
 const categories = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Insurance', 'Vacation', 'Home', 'Filippo', 'Other']
-const sources = ['Salary', 'Freelance', 'Gift', 'Investment', 'Other']
+const sources = ['Salary', 'Freelance', 'Gift', 'Investment', 'Ticket', 'Spese Extra', 'Pannelli', 'Other']
 const people = ['Massimo', 'Elena', 'Conto Mediolanum']
 
 onMounted(async () => {
@@ -170,6 +170,25 @@ const tabs = [
   { id: 'reminders', name: 'Reminders', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   { id: 'statistics', name: 'Stats', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
 ]
+
+const groupedExpenses = computed(() => {
+  const groups = {}
+  expenses.value.forEach(expense => {
+    const monthKey = expense.date.substring(0, 7)
+    if (!groups[monthKey]) groups[monthKey] = []
+    groups[monthKey].push(expense)
+  })
+  return Object.keys(groups).sort((a, b) => b.localeCompare(a)).reduce((acc, key) => {
+    acc[key] = groups[key]
+    return acc
+  }, {})
+})
+
+const formatMonth = (monthStr: string) => {
+  const [year, month] = monthStr.split('-')
+  const date = new Date(parseInt(year), parseInt(month) - 1)
+  return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+}
 </script>
 
 <template>
@@ -307,50 +326,59 @@ const tabs = [
                    </div>
                    No expenses recorded yet.
                  </div>
-                 <ul v-else class="space-y-4">
-                   <li v-for="expense in expenses" :key="expense.id" class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-slate-50/50 rounded-2xl hover:bg-white hover:shadow-md transition-all duration-300 group ring-1 ring-slate-100 hover:ring-indigo-100">
-                     <div class="flex items-center gap-4 flex-1">
-                        <div :class="['w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border shadow-sm', getCategoryColor(expense.category).split(' ')[0].replace('bg-', 'bg-').replace('-50', '-100')]">
-                           <span class="text-lg"></span>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <div class="flex items-center gap-2 mb-0.5">
-                            <p class="font-bold text-slate-800 truncate">{{ expense.description || expense.category }}</p>
-                            <span :class="['px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full border border-opacity-20 shadow-sm shrink-0', getCategoryColor(expense.category)]">
-                               {{ expense.category }}
-                            </span>
-                          </div>
-                          <div class="flex items-center gap-3 text-[10px] font-medium text-slate-400">
-                            <p>{{ expense.date }}</p>
-                            <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                            <p>{{ expense.paid_by || 'Unknown' }}</p>
-                          </div>
-                        </div>
+                 <div v-else>
+                   <div v-for="(monthExpenses, month) in groupedExpenses" :key="month" class="mb-8 last:mb-0">
+                     <div class="flex items-center gap-4 mb-4">
+                       <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ formatMonth(month) }}</h4>
+                       <div class="h-px bg-slate-100 flex-1"></div>
+                       <p class="text-[10px] font-bold text-slate-400">&euro; {{ monthExpenses.reduce((s, e) => s + parseFloat(e.amount), 0).toFixed(2) }}</p>
                      </div>
-                     <div class="flex items-center justify-between sm:justify-end gap-4 mt-4 sm:mt-0">
-                         <div class="text-right">
-                           <span class="text-lg font-black text-slate-900">&euro; {{ expense.amount.toFixed(2) }}</span>
+                     <ul class="space-y-4">
+                       <li v-for="expense in monthExpenses" :key="expense.id" class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-slate-50/50 rounded-2xl hover:bg-white hover:shadow-md transition-all duration-300 group ring-1 ring-slate-100 hover:ring-indigo-100">
+                         <div class="flex items-center gap-4 flex-1">
+                            <div :class="['w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border shadow-sm', getCategoryColor(expense.category).split(' ')[0].replace('bg-', 'bg-').replace('-50', '-100')]">
+                               <span class="text-lg"></span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                              <div class="flex items-center gap-2 mb-0.5">
+                                <p class="font-bold text-slate-800 truncate">{{ expense.description || expense.category }}</p>
+                                <span :class="['px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full border border-opacity-20 shadow-sm shrink-0', getCategoryColor(expense.category)]">
+                                   {{ expense.category }}
+                                </span>
+                              </div>
+                              <div class="flex items-center gap-3 text-[10px] font-medium text-slate-400">
+                                <p>{{ expense.date }}</p>
+                                <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                <p>{{ expense.paid_by || 'Unknown' }}</p>
+                              </div>
+                            </div>
                          </div>
-                         <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button v-if="expense.image_url" @click="selectedImage = expense.image_url" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="View Receipt">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </button>
-                            <button @click="startEdit(expense, 'expense')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button @click="deleteItem(expense.id, 'expense')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                         <div class="flex items-center justify-between sm:justify-end gap-4 mt-4 sm:mt-0">
+                             <div class="text-right">
+                               <span class="text-lg font-black text-slate-900">&euro; {{ expense.amount.toFixed(2) }}</span>
+                             </div>
+                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button v-if="expense.image_url" @click="selectedImage = expense.image_url" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="View Receipt">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                                <button @click="startEdit(expense, 'expense')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                                <button @click="deleteItem(expense.id, 'expense')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                             </div>
                          </div>
-                     </div>
-                   </li>
-                 </ul>
+                       </li>
+                     </ul>
+                   </div>
+                 </div>
               </div>
            </div>
 

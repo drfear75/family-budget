@@ -170,10 +170,12 @@ const incomeBarOptions = {
   },
   scales: {
     x: {
+      stacked: true,
       grid: { display: false },
       ticks: { font: { family: 'Outfit', weight: 'bold' } }
     },
     y: {
+      stacked: true,
       grid: { color: '#f1f5f9' },
       ticks: { 
         font: { family: 'Outfit' },
@@ -181,6 +183,23 @@ const incomeBarOptions = {
       }
     }
   }
+}
+
+const formatMonth = (monthStr: string) => {
+  const [year, month] = monthStr.split('-')
+  const date = new Date(parseInt(year), parseInt(month) - 1)
+  return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+}
+
+const getGroupedExpensesForCategory = (category: string) => {
+  const filtered = getExpensesForCategory(category)
+  const groups = {}
+  filtered.forEach(ex => {
+    const monthKey = ex.date.substring(0, 7)
+    if (!groups[monthKey]) groups[monthKey] = []
+    groups[monthKey].push(ex)
+  })
+  return groups
 }
 </script>
 
@@ -272,20 +291,29 @@ const incomeBarOptions = {
               <!-- Drilldown Details -->
               <tr v-if="expandedCategory === category" class="bg-indigo-50/30">
                 <td colspan="3" class="px-6 py-6 transition-all duration-500 animate-slide-up">
-                   <div class="space-y-3">
-                      <div v-for="ex in getExpensesForCategory(category)" :key="ex.id" class="flex justify-between items-center p-3 bg-white rounded-xl shadow-sm border border-indigo-100/50">
-                        <div class="flex items-center gap-3">
-                           <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-xs"></div>
-                           <div>
-                             <p class="text-sm font-bold text-slate-800">{{ ex.description || 'No description' }}</p>
-                             <div class="flex items-center gap-2 text-[10px] font-medium text-slate-400">
-                               <span>{{ ex.date }}</span>
-                               <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                               <span>{{ ex.paid_by }}</span>
-                             </div>
-                           </div>
+                   <div class="space-y-6">
+                      <div v-for="(monthExpenses, month) in getGroupedExpensesForCategory(category)" :key="month">
+                        <div class="flex items-center gap-3 mb-3">
+                          <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{{ formatMonth(month) }}</p>
+                          <div class="h-px bg-indigo-100/50 flex-1"></div>
+                          <p class="text-[10px] font-bold text-indigo-400">&euro; {{ monthExpenses.reduce((s, e) => s + parseFloat(e.amount), 0).toFixed(2) }}</p>
                         </div>
-                        <p class="font-black text-slate-900">&euro; {{ parseFloat(ex.amount).toFixed(2) }}</p>
+                        <div class="space-y-3">
+                          <div v-for="ex in monthExpenses" :key="ex.id" class="flex justify-between items-center p-3 bg-white rounded-xl shadow-sm border border-indigo-100/50">
+                            <div class="flex items-center gap-3">
+                               <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-xs"></div>
+                               <div>
+                                 <p class="text-sm font-bold text-slate-800">{{ ex.description || 'No description' }}</p>
+                                 <div class="flex items-center gap-2 text-[10px] font-medium text-slate-400">
+                                   <span>{{ ex.date }}</span>
+                                   <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                   <span>{{ ex.paid_by }}</span>
+                                 </div>
+                               </div>
+                            </div>
+                            <p class="font-black text-slate-900">&euro; {{ parseFloat(ex.amount).toFixed(2) }}</p>
+                          </div>
+                        </div>
                       </div>
                    </div>
                 </td>

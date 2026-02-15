@@ -9,7 +9,7 @@ const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const emit = defineEmits(['income-saved'])
 
-const sources = ['Salary', 'Freelance', 'Gift', 'Investment', 'Other']
+const sources = ['Salary', 'Freelance', 'Gift', 'Investment', 'Ticket', 'Spese Extra', 'Pannelli', 'Other']
 const people = ['Massimo', 'Elena', 'Conto Mediolanum']
 
 const selectedFile = ref<File | null>(null)
