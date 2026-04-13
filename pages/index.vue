@@ -217,6 +217,33 @@ const exportExpensesToExcel = async () => {
         alert("Failed to export to Excel.")
     }
 }
+const exportIncomesToExcel = async () => {
+    if (!incomes.value || incomes.value.length === 0) {
+        alert("No incomes to export.")
+        return
+    }
+    
+    try {
+        const XLSX = await import('xlsx')
+        
+        const dataToExport = incomes.value.map(income => ({
+            Date: income.date,
+            Description: income.description || '',
+            Source: income.source,
+            Amount: income.amount,
+            'Received By': income.paid_by || ''
+        }))
+        
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Incomes")
+        
+        XLSX.writeFile(workbook, "Incomes.xlsx")
+    } catch (error) {
+        console.error("Error exporting to Excel:", error)
+        alert("Failed to export to Excel.")
+    }
+}
 </script>
 
 <template>
@@ -424,7 +451,18 @@ const exportExpensesToExcel = async () => {
                 <IncomeForm @income-saved="fetchIncomes" />
               </div>
               <div class="lg:col-span-3 glass-card p-6 rounded-3xl">
-                <h3 class="text-xl font-bold mb-6 text-slate-800">Recent Incomes</h3>
+                <div class="flex justify-between items-center mb-6">
+                  <h3 class="text-xl font-bold text-slate-800">Recent Incomes</h3>
+                  <div class="flex items-center gap-4">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ incomes.length }} Items</p>
+                    <button v-if="incomes.length > 0" @click="exportIncomesToExcel" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl text-xs font-bold transition-colors" title="Export to Excel">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span class="hidden sm:inline">Export</span>
+                    </button>
+                  </div>
+                </div>
                  <div v-if="incomes.length === 0" class="text-slate-400 text-center py-12">No incomes recorded yet.</div>
                  <ul v-else class="space-y-4">
                    <li v-for="income in incomes" :key="income.id" class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-slate-50/50 rounded-2xl hover:bg-white hover:shadow-md transition-all duration-300 group ring-1 ring-slate-100 hover:ring-emerald-100">
