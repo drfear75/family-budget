@@ -189,6 +189,34 @@ const formatMonth = (monthStr: string) => {
   const date = new Date(parseInt(year), parseInt(month) - 1)
   return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
 }
+
+const exportExpensesToExcel = async () => {
+    if (!expenses.value || expenses.value.length === 0) {
+        alert("No expenses to export.")
+        return
+    }
+    
+    try {
+        const XLSX = await import('xlsx')
+        
+        const dataToExport = expenses.value.map(expense => ({
+            Date: expense.date,
+            Description: expense.description || '',
+            Category: expense.category,
+            Amount: expense.amount,
+            'Paid By': expense.paid_by || ''
+        }))
+        
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses")
+        
+        XLSX.writeFile(workbook, "Expenses.xlsx")
+    } catch (error) {
+        console.error("Error exporting to Excel:", error)
+        alert("Failed to export to Excel.")
+    }
+}
 </script>
 
 <template>
@@ -316,7 +344,15 @@ const formatMonth = (monthStr: string) => {
               <div class="lg:col-span-3 glass-card p-6 rounded-3xl">
                 <div class="flex justify-between items-center mb-6">
                   <h3 class="text-xl font-bold text-slate-800">Recent Transactions</h3>
-                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ expenses.length }} Items</p>
+                  <div class="flex items-center gap-4">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ expenses.length }} Items</p>
+                    <button v-if="expenses.length > 0" @click="exportExpensesToExcel" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl text-xs font-bold transition-colors" title="Export to Excel">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span class="hidden sm:inline">Export</span>
+                    </button>
+                  </div>
                 </div>
                  <div v-if="expenses.length === 0" class="text-slate-400 text-center py-12">
                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
