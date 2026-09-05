@@ -171,27 +171,60 @@ const tabs = [
   { id: 'statistics', name: 'Stats', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
 ]
 
-const groupedExpenses = computed(() => {
-  const groups = {}
-  expenses.value.forEach(expense => {
-    const monthKey = expense.date.substring(0, 7)
-    if (!groups[monthKey]) groups[monthKey] = []
-    groups[monthKey].push(expense)
-  })
-  return Object.keys(groups).sort((a, b) => b.localeCompare(a)).reduce((acc, key) => {
-    acc[key] = groups[key]
-    return acc
-  }, {})
-})
-
 const formatMonth = (monthStr: string) => {
   const [year, month] = monthStr.split('-')
   const date = new Date(parseInt(year), parseInt(month) - 1)
   return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
 }
 
+const searchExpenseQuery = ref('')
+
+const filteredExpenses = computed(() => {
+  const query = searchExpenseQuery.value.trim().toLowerCase()
+  if (!query) return expenses.value
+
+  const normalizedQuery = query.replace(',', '.')
+
+  return expenses.value.filter((expense: any) => {
+    const desc = (expense.description || '').toLowerCase()
+    const cat = (expense.category || '').toLowerCase()
+    const paidBy = (expense.paid_by || '').toLowerCase()
+    const date = (expense.date || '').toLowerCase()
+    const amountStr = expense.amount !== undefined && expense.amount !== null ? String(expense.amount) : ''
+    const amountFixed = expense.amount !== undefined && expense.amount !== null ? Number(expense.amount).toFixed(2) : ''
+
+    let monthName = ''
+    if (expense.date && expense.date.length >= 7) {
+      try {
+        monthName = formatMonth(expense.date.substring(0, 7)).toLowerCase()
+      } catch (e) {}
+    }
+
+    return desc.includes(query) ||
+           cat.includes(query) ||
+           paidBy.includes(query) ||
+           date.includes(query) ||
+           monthName.includes(query) ||
+           amountStr.includes(normalizedQuery) ||
+           amountFixed.includes(normalizedQuery)
+  })
+})
+
+const groupedExpenses = computed(() => {
+  const groups: Record<string, any[]> = {}
+  filteredExpenses.value.forEach((expense: any) => {
+    const monthKey = expense.date ? expense.date.substring(0, 7) : 'Unknown'
+    if (!groups[monthKey]) groups[monthKey] = []
+    groups[monthKey].push(expense)
+  })
+  return Object.keys(groups).sort((a, b) => b.localeCompare(a)).reduce((acc: Record<string, any[]>, key) => {
+    acc[key] = groups[key]
+    return acc
+  }, {})
+})
 const exportExpensesToExcel = async () => {
-    if (!expenses.value || expenses.value.length === 0) {
+    const itemsToExport = filteredExpenses.value.length > 0 ? filteredExpenses.value : expenses.value
+    if (!itemsToExport || itemsToExport.length === 0) {
         alert("No expenses to export.")
         return
     }
@@ -199,7 +232,7 @@ const exportExpensesToExcel = async () => {
     try {
         const XLSX = await import('xlsx')
         
-        const dataToExport = expenses.value.map(expense => ({
+        const dataToExport = itemsToExport.map((expense: any) => ({
             Date: expense.date,
             Description: expense.description || '',
             Category: expense.category,
@@ -369,11 +402,40 @@ const exportIncomesToExcel = async () => {
                 <ExpenseForm @expense-saved="fetchExpenses" />
               </div>
               <div class="lg:col-span-3 glass-card p-6 rounded-3xl">
-                <div class="flex justify-between items-center mb-6">
-                  <h3 class="text-xl font-bold text-slate-800">Recent Transactions</h3>
-                  <div class="flex items-center gap-4">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ expenses.length }} Items</p>
-                    <button v-if="expenses.length > 0" @click="exportExpensesToExcel" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl text-xs font-bold transition-colors" title="Export to Excel">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h3 class="text-xl font-bold text-slate-800">Recent Transactions</h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      <span v-if="searchExpenseQuery.trim()">Found {{ filteredExpenses.length }} of {{ expenses.length }} Items</span>
+                      <span v-else>{{ expenses.length }} Items</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="relative flex-1 sm:w-60">
+                      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        v-model="searchExpenseQuery"
+                        type="text"
+                        placeholder="Search transactions..."
+                        class="w-full pl-10 pr-9 py-2 rounded-xl border border-slate-200 bg-white/70 shadow-sm transition-all duration-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm outline-none placeholder:text-slate-400 text-slate-700"
+                      />
+                      <button
+                        v-if="searchExpenseQuery"
+                        @click="searchExpenseQuery = ''"
+                        type="button"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                        title="Clear search"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <button v-if="expenses.length > 0" @click="exportExpensesToExcel" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl text-xs font-bold transition-colors shadow-sm shrink-0" title="Export to Excel">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
@@ -388,6 +450,18 @@ const exportIncomesToExcel = async () => {
                      </svg>
                    </div>
                    No expenses recorded yet.
+                 </div>
+                 <div v-else-if="filteredExpenses.length === 0" class="text-slate-400 text-center py-12">
+                   <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                     </svg>
+                   </div>
+                   <p class="text-sm font-semibold text-slate-600">No transactions matching "{{ searchExpenseQuery }}"</p>
+                   <p class="text-xs text-slate-400 mt-1">Try searching by category, description, or person.</p>
+                   <button @click="searchExpenseQuery = ''" type="button" class="mt-4 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">
+                     Clear search
+                   </button>
                  </div>
                  <div v-else>
                    <div v-for="(monthExpenses, month) in groupedExpenses" :key="month" class="mb-8 last:mb-0">
